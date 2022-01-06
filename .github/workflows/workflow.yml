@@ -1,0 +1,44 @@
+name: 'workflow'
+
+on:
+  push:
+    branches:
+    - 'main'
+  workflow_dispatch:
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.head_ref || github.ref }}'
+  cancel-in-progress: true
+
+env:
+  PROJECT_ID: 'sv-wif-test2'
+  BUCKET: 'sv-wif-test2-bucket'
+
+jobs:
+  workflow:
+    name: 'workflow'
+    runs-on: '${{ matrix.os }}'
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+        - 'ubuntu-latest'
+        - 'windows-latest'
+
+    steps:
+    - uses: 'actions/checkout@v2'
+
+    - uses: 'google-github-actions/auth@v0'
+      with:
+        credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
+        project_id: '${{ env.PROJECT_ID }}'
+
+    - uses: 'google-github-actions/upload-cloud-storage@v0.5.0'
+      with:
+        path: 'assets/'
+        parent: false
+        destination: '${{ env.BUCKET }}/${{ matrix.os }}'
+        gzip: true
+        headers: |-
+          cache-control: public,max-age=31536000,immutable
